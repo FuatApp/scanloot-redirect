@@ -80,8 +80,8 @@
         const card = document.getElementById('content');
 
         if (code) {
-            // Try to redirect to the app via deep link
-            const deepLink = 'cardscanner://ebay_de-callback?code=' + encodeURIComponent(code);
+            // Pass code as-is - do NOT double-encode, the URI scheme handles it
+            const deepLink = 'cardscanner://ebay_de-callback?code=' + code;
             window.location.href = deepLink;
 
             // After 2 seconds, show manual fallback
