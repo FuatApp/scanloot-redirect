@@ -26,9 +26,9 @@
             text-align: center;
             box-shadow: 0 8px 32px rgba(90, 75, 209, 0.3);
         }
-        .icon { font-size: 48px; margin-bottom: 16px; }
+        .icon { font-size: 56px; margin-bottom: 12px; }
         h1 { font-size: 22px; margin: 0 0 8px; }
-        p { color: #aaa; font-size: 14px; line-height: 1.5; }
+        p { color: #aaa; font-size: 14px; line-height: 1.5; margin: 8px 0; }
         .code-box {
             background: #0D0D1A;
             border: 1px solid #5A4BD1;
@@ -42,71 +42,78 @@
             user-select: all;
         }
         .btn {
-            display: inline-block;
+            display: block;
             background: #5A4BD1;
             color: #fff;
-            padding: 14px 32px;
+            padding: 16px 24px;
             border-radius: 12px;
             text-decoration: none;
-            font-weight: 600;
-            font-size: 16px;
-            margin-top: 12px;
+            font-weight: 700;
+            font-size: 17px;
+            margin: 16px 0 8px;
+            border: none;
+            width: 100%;
+            box-sizing: border-box;
+            cursor: pointer;
         }
         .btn:active { opacity: 0.8; }
+        .btn-secondary {
+            background: transparent;
+            color: #aaa;
+            border: 1px solid #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
         .hint { color: #666; font-size: 12px; margin-top: 16px; }
         .success { color: #00E676; }
-        .spinner {
-            border: 3px solid #333;
-            border-top: 3px solid #5A4BD1;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="card" id="content">
-        <div class="spinner"></div>
-        <h1>Verbinde mit ScanLoot...</h1>
-        <p>Einen Moment bitte.</p>
+        <div class="icon">&#x2705;</div>
+        <h1 class="success">eBay verbunden!</h1>
+        <p>Tippe auf den Button, um zur&uuml;ck zu ScanLoot zu wechseln.</p>
+        <a class="btn" id="openBtn" href="#">ScanLoot &ouml;ffnen</a>
+        <p class="hint">Falls nichts passiert: Code kopieren und manuell zur App wechseln</p>
+        <div class="code-box" id="codeBox" onclick="copyCode()">&hellip;</div>
     </div>
 
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        const card = document.getElementById('content');
+        // iOS Safari greys out the "open in another app" dialog buttons for
+        // ~2 seconds when the redirect is auto-triggered on page load (not
+        // user-initiated). That lock-out plus our crash on resume made the
+        // eBay-connect flow unrecoverable from the user's side.
+        //
+        // Fix: never auto-redirect. Render a button immediately and let the
+        // user tap it — iOS then allows the dialog through with active
+        // Allow/Disallow buttons, no waiting, no greyed state. We also pre-
+        // copy the code to the clipboard so the in-app paste fallback works
+        // if the user dismisses the dialog by accident.
+        var params = new URLSearchParams(window.location.search);
+        var code = params.get('code');
+        var card = document.getElementById('content');
+        var btn = document.getElementById('openBtn');
+        var codeBox = document.getElementById('codeBox');
 
         if (code) {
-            // MUST encode - eBay codes contain # which breaks URIs
-            const deepLink = 'cardscanner://ebay_de-callback?code=' + encodeURIComponent(code);
-            window.location.href = deepLink;
-
-            // After 2 seconds, show manual fallback
-            setTimeout(function() {
-                card.innerHTML =
-                    '<div class="icon">&#x2705;</div>' +
-                    '<h1 class="success">eBay verbunden!</h1>' +
-                    '<p>Falls die App sich nicht automatisch oeffnet, kopiere diesen Code und fuege ihn in der App ein:</p>' +
-                    '<div class="code-box" onclick="copyCode()">' + code + '</div>' +
-                    '<a class="btn" href="' + deepLink + '">App oeffnen</a>' +
-                    '<p class="hint">Tippe auf den Code um ihn zu kopieren</p>';
-            }, 2000);
+            var deepLink = 'cardscanner://ebay_de-callback?code=' +
+                encodeURIComponent(code);
+            btn.href = deepLink;
+            codeBox.textContent = code;
+            try { navigator.clipboard.writeText(code); } catch (e) {}
         } else {
             card.innerHTML =
                 '<div class="icon">&#x274C;</div>' +
                 '<h1>Verbindung fehlgeschlagen</h1>' +
-                '<p>Kein Autorisierungscode erhalten. Bitte versuche es erneut in der App.</p>';
+                '<p>Kein Autorisierungscode erhalten. Bitte versuche es ' +
+                'erneut in der App.</p>';
         }
 
         function copyCode() {
-            if (code) {
-                navigator.clipboard.writeText(code).then(function() {
-                    alert('Code kopiert!');
-                });
-            }
+            if (!code) return;
+            navigator.clipboard.writeText(code).then(function() {
+                codeBox.textContent = 'Kopiert! ' + code;
+            });
         }
     </script>
 </body>
