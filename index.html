@@ -91,16 +91,32 @@
         // if the user dismisses the dialog by accident.
         var params = new URLSearchParams(window.location.search);
         var code = params.get('code');
+        var state = params.get('state');
         var card = document.getElementById('content');
         var btn = document.getElementById('openBtn');
         var codeBox = document.getElementById('codeBox');
 
         if (code) {
+            // Forward the anti-CSRF `state` nonce back to the app so its
+            // verifier can match it (the app accepts a missing state for
+            // backwards-compat, but forwarding it restores full protection).
             var deepLink = 'cardscanner://ebay_de-callback?code=' +
                 encodeURIComponent(code);
+            if (state) {
+                deepLink += '&state=' + encodeURIComponent(state);
+            }
             btn.href = deepLink;
             codeBox.textContent = code;
             try { navigator.clipboard.writeText(code); } catch (e) {}
+            // Auto-jump back into the app. The previous version never did this,
+            // so the in-app spinner hung forever unless the user noticed and
+            // tapped the button. A short delay (NOT on-load) sidesteps iOS
+            // Safari's ~2s greyed "open in app" lock-out; on Android it fires
+            // immediately. The button below stays as a manual fallback if the
+            // OS blocks the programmatic navigation.
+            setTimeout(function () {
+                window.location.href = deepLink;
+            }, 600);
         } else {
             card.innerHTML =
                 '<div class="icon">&#x274C;</div>' +
